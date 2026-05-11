@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ashwin-portfolio-plum.vercel.app/sitemap.xml
