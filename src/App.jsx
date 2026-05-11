@@ -4,18 +4,18 @@ import { Navbar } from './sections/Navbar'
 import { Hero } from './sections/Hero'
 import { Footer } from './sections/Footer'
 
-// Lazy-load below-fold sections for code splitting
-const About = lazy(() => import('./sections/About').then(m => ({ default: m.About })))
-const Skills = lazy(() => import('./sections/Skills').then(m => ({ default: m.Skills })))
-const Projects = lazy(() => import('./sections/Projects').then(m => ({ default: m.Projects })))
-const Experience = lazy(() => import('./sections/Experience').then(m => ({ default: m.Experience })))
-const Testimonials = lazy(() => import('./sections/Testimonials').then(m => ({ default: m.Testimonials })))
-const Contact = lazy(() => import('./sections/Contact').then(m => ({ default: m.Contact })))
+// Lazy-load all below-fold sections for code splitting
+const About       = lazy(() => import('./sections/About').then(m => ({ default: m.About })))
+const Journey     = lazy(() => import('./sections/Journey').then(m => ({ default: m.Journey })))
+const Stats       = lazy(() => import('./sections/Stats').then(m => ({ default: m.Stats })))
+const Skills      = lazy(() => import('./sections/Skills').then(m => ({ default: m.Skills })))
+const Projects    = lazy(() => import('./sections/Projects').then(m => ({ default: m.Projects })))
+const Contact     = lazy(() => import('./sections/Contact').then(m => ({ default: m.Contact })))
 
 function SectionLoader() {
   return (
-    <div className="flex justify-center py-20" aria-hidden="true">
-      <div className="w-6 h-6 rounded-full border-2 border-violet-500 border-t-transparent animate-spin" />
+    <div className="flex justify-center py-24" aria-hidden="true">
+      <div className="w-5 h-5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
     </div>
   )
 }
@@ -29,10 +29,10 @@ export default function App() {
           <Hero />
           <Suspense fallback={<SectionLoader />}>
             <About />
+            <Journey />
+            <Stats />
             <Skills />
             <Projects />
-            <Experience />
-            <Testimonials />
             <Contact />
           </Suspense>
         </main>

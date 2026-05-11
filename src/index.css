@@ -12,19 +12,17 @@
   }
 
   ::selection {
-    @apply bg-violet-500/30 text-violet-200;
+    @apply bg-emerald-500/30 text-emerald-100;
   }
 
   ::-webkit-scrollbar {
-    width: 6px;
+    width: 5px;
   }
-
   ::-webkit-scrollbar-track {
     @apply bg-zinc-950;
   }
-
   ::-webkit-scrollbar-thumb {
-    @apply bg-violet-700 rounded-full;
+    @apply bg-emerald-700/50 rounded-full;
   }
 }
 
@@ -34,11 +32,11 @@
   }
 
   .section-label {
-    @apply text-violet-500 dark:text-violet-400 font-mono text-xs uppercase tracking-[0.2em] mb-3 block;
+    @apply text-emerald-600 dark:text-emerald-400 font-mono text-xs uppercase tracking-[0.2em] mb-3 block;
   }
 
   .section-heading {
-    @apply text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-12;
+    @apply text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-12 leading-tight;
   }
 
   .card {
@@ -46,20 +44,24 @@
   }
 
   .card-hover {
-    @apply hover:border-violet-400/50 dark:hover:border-violet-500/50 transition-all duration-300;
+    @apply hover:border-emerald-500/40 dark:hover:border-emerald-500/30 transition-all duration-300;
   }
 }
 
 @layer utilities {
   .text-gradient {
-    @apply bg-gradient-to-r from-violet-500 to-purple-400 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent;
   }
 
-  .glow-violet {
-    box-shadow: 0 0 24px rgba(139, 92, 246, 0.25);
+  .glow-emerald {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
   }
 
-  .glow-violet-lg {
-    box-shadow: 0 0 48px rgba(139, 92, 246, 0.4);
+  .glow-emerald-lg {
+    box-shadow: 0 0 40px rgba(16, 185, 129, 0.4);
+  }
+
+  .timeline-line {
+    @apply absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent md:-translate-x-px;
   }
 }

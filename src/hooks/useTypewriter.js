@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-export function useTypewriter(phrases, typingSpeed = 80, deletingSpeed = 45, pauseTime = 1800) {
+export function useTypewriter(phrases, typingSpeed = 75, deletingSpeed = 40, pauseTime = 1800) {
   const [state, setState] = useState({
     text: '',
     phraseIndex: 0,
@@ -24,12 +24,10 @@ export function useTypewriter(phrases, typingSpeed = 80, deletingSpeed = 45, pau
       setState(s => {
         const { text, phraseIndex, isDeleting } = s
         const phrase = phrases[phraseIndex]
-
         if (!isDeleting) {
           if (text.length < phrase.length) return { ...s, text: phrase.slice(0, text.length + 1) }
           return { ...s, isPaused: true }
         }
-
         if (text.length > 0) return { ...s, text: text.slice(0, -1) }
         return { ...s, isDeleting: false, phraseIndex: (phraseIndex + 1) % phrases.length }
       })
