@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 font-sans antialiased transition-colors duration-300;
+  }
+
+  ::selection {
+    @apply bg-violet-500/30 text-violet-200;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-zinc-950;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-violet-700 rounded-full;
+  }
+}
+
+@layer components {
+  .section-container {
+    @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-label {
+    @apply text-violet-500 dark:text-violet-400 font-mono text-xs uppercase tracking-[0.2em] mb-3 block;
+  }
+
+  .section-heading {
+    @apply text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-12;
+  }
+
+  .card {
+    @apply bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl;
+  }
+
+  .card-hover {
+    @apply hover:border-violet-400/50 dark:hover:border-violet-500/50 transition-all duration-300;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-violet-500 to-purple-400 bg-clip-text text-transparent;
+  }
+
+  .glow-violet {
+    box-shadow: 0 0 24px rgba(139, 92, 246, 0.25);
+  }
+
+  .glow-violet-lg {
+    box-shadow: 0 0 48px rgba(139, 92, 246, 0.4);
+  }
+}

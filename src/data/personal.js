@@ -1,0 +1,20 @@
+export const personal = {
+  name: 'Ashwin Jagarwal',
+  firstName: 'Ashwin',
+  lastName: 'Jagarwal',
+  title: 'Software Engineer',
+  tagline: 'Building scalable, user-focused software with clean code and modern technology.',
+  bio: "I'm a Software Engineer who loves turning complex problems into elegant, maintainable solutions. I specialize in full-stack development — from pixel-perfect UIs to robust backend systems. I care deeply about code quality, developer experience, and shipping things that actually work.",
+  location: 'India',
+  availability: 'Open to opportunities',
+  email: 'ashwinjagarwal123@gmail.com',
+  resumeUrl: '/resume.pdf',
+  yearsOfExperience: '2+',
+  roles: ['Software Engineer', 'Full Stack Developer', 'React Developer', 'Problem Solver'],
+  social: {
+    github: 'https://github.com/ashwinjagarwal',
+    linkedin: 'https://linkedin.com/in/ashwinjagarwal',
+    twitter: 'https://twitter.com/ashwinjagarwal',
+    email: 'mailto:ashwinjagarwal123@gmail.com',
+  },
+}
