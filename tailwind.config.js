@@ -19,6 +19,7 @@ export default {
         'draw-chart': 'drawChart 3.5s ease-out 0.8s forwards',
         'draw-chart-2': 'drawChart 3.5s ease-out 1.4s forwards',
         'pulse-dot': 'pulseDot 2s ease-out infinite',
+        'coin-flip': 'coinFlip 0.75s ease-in-out',
       },
       keyframes: {
         fadeIn: {
@@ -45,6 +46,10 @@ export default {
           '0%': { transform: 'scale(1)', opacity: '0.8' },
           '50%': { transform: 'scale(1.8)', opacity: '0.3' },
           '100%': { transform: 'scale(1)', opacity: '0.8' },
+        },
+        coinFlip: {
+          '0%':   { transform: 'rotateY(0deg)' },
+          '100%': { transform: 'rotateY(720deg)' },
         },
       },
     },

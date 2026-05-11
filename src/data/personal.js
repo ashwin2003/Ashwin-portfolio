@@ -4,7 +4,7 @@ export const personal = {
   lastName: 'Jagarwal',
   title: 'Senior Software Engineer — React Native & Frontend',
   tagline: 'Building low-latency fintech and trading platforms that move at the speed of markets.',
-  bio: `I'm a performance-obsessed engineer who started at NIT Kurukshetra (EE, CGPA 8.8) and somehow ended up building the very interfaces that move real money in real time.
+  bio: `I'm a performance-obsessed engineer who started at NIT Kurukshetra (B.Tech, CGPA 8.8) and somehow ended up building the very interfaces that move real money in real time.
 
 Over 3+ years across three high-growth startups — Lio, Nuvama, and ZET — I've shipped 12+ production modules, architected UPI payment flows from scratch, and built trading apps used daily by wealth advisors managing high-value client portfolios.
 

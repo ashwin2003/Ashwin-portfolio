@@ -1,16 +1,20 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState, useCallback } from 'react'
+import { Routes, Route } from 'react-router-dom'
 import { ThemeProvider } from './context/ThemeContext'
 import { Navbar } from './sections/Navbar'
 import { Hero } from './sections/Hero'
 import { Footer } from './sections/Footer'
+import { ScrollToTop } from './components/ScrollToTop'
+import { SplashScreen } from './components/SplashScreen'
+import { NotFound } from './pages/NotFound'
 
-// Lazy-load all below-fold sections for code splitting
-const About       = lazy(() => import('./sections/About').then(m => ({ default: m.About })))
-const Journey     = lazy(() => import('./sections/Journey').then(m => ({ default: m.Journey })))
-const Stats       = lazy(() => import('./sections/Stats').then(m => ({ default: m.Stats })))
-const Skills      = lazy(() => import('./sections/Skills').then(m => ({ default: m.Skills })))
-const Projects    = lazy(() => import('./sections/Projects').then(m => ({ default: m.Projects })))
-const Contact     = lazy(() => import('./sections/Contact').then(m => ({ default: m.Contact })))
+const About        = lazy(() => import('./sections/About').then(m => ({ default: m.About })))
+const Journey      = lazy(() => import('./sections/Journey').then(m => ({ default: m.Journey })))
+const Stats        = lazy(() => import('./sections/Stats').then(m => ({ default: m.Stats })))
+const Skills       = lazy(() => import('./sections/Skills').then(m => ({ default: m.Skills })))
+const TechStack    = lazy(() => import('./sections/TechStack').then(m => ({ default: m.TechStack })))
+const Testimonials = lazy(() => import('./sections/Testimonials').then(m => ({ default: m.Testimonials })))
+const Contact      = lazy(() => import('./sections/Contact').then(m => ({ default: m.Contact })))
 
 function SectionLoader() {
   return (
@@ -20,23 +24,40 @@ function SectionLoader() {
   )
 }
 
+function MainContent() {
+  return (
+    <>
+      <Navbar />
+      <main id="main-content">
+        <Hero />
+        <Suspense fallback={<SectionLoader />}>
+          <About />
+          <Journey />
+          <Stats />
+          <Skills />
+          <TechStack />
+          <Testimonials />
+          <Contact />
+        </Suspense>
+      </main>
+      <Footer />
+    </>
+  )
+}
+
 export default function App() {
+  const [splashDone, setSplashDone] = useState(false)
+  const handleSplashDone = useCallback(() => setSplashDone(true), [])
+
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 transition-colors duration-300">
-        <Navbar />
-        <main id="main-content">
-          <Hero />
-          <Suspense fallback={<SectionLoader />}>
-            <About />
-            <Journey />
-            <Stats />
-            <Skills />
-            <Projects />
-            <Contact />
-          </Suspense>
-        </main>
-        <Footer />
+        {!splashDone && <SplashScreen onDone={handleSplashDone} />}
+        <Routes>
+          <Route path="/" element={<MainContent />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <ScrollToTop />
       </div>
     </ThemeProvider>
   )

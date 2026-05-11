@@ -5,9 +5,9 @@ import { Button } from '../components/Button'
 import { personal } from '../data/personal'
 
 // Replace with your EmailJS credentials from https://www.emailjs.com/
-const EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID'
-const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID'
-const EMAILJS_PUBLIC_KEY = 'YOUR_PUBLIC_KEY'
+const EMAILJS_SERVICE_ID = 'service_2nb5qed'
+const EMAILJS_TEMPLATE_ID = 'template_ozn31kv'
+const EMAILJS_PUBLIC_KEY = 'p48dSv7cZLDneMm7F'
 
 const INITIAL_FORM = { name: '', email: '', message: '' }
 
@@ -82,6 +82,7 @@ export function Contact() {
   const [form, setForm] = useState(INITIAL_FORM)
   const [errors, setErrors] = useState({})
   const [status, setStatus] = useState('idle')
+  const [errorDetail, setErrorDetail] = useState('')
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target
@@ -104,8 +105,10 @@ export function Contact() {
       )
       setStatus('success')
       setForm(INITIAL_FORM)
-    } catch {
+    } catch (err) {
+      console.error('EmailJS error:', err)
       setStatus('error')
+      setErrorDetail(err?.text || err?.message || String(err))
     }
   }, [form])
 
@@ -163,9 +166,16 @@ export function Contact() {
               </p>
             )}
             {status === 'error' && (
-              <p role="alert" className="mt-4 text-sm text-red-500 dark:text-red-400 font-medium">
-                Something went wrong. Email me directly at {personal.email}
-              </p>
+              <div role="alert" className="mt-4 space-y-1">
+                <p className="text-sm text-red-500 dark:text-red-400 font-medium">
+                  Something went wrong. Email me directly at {personal.email}
+                </p>
+                {errorDetail && (
+                  <p className="text-xs text-red-400 dark:text-red-500 font-mono break-all">
+                    {errorDetail}
+                  </p>
+                )}
+              </div>
             )}
 
             <Button type="submit" className="mt-6 w-full" disabled={status === 'loading'}>

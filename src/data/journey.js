@@ -5,13 +5,13 @@ export const journey = [
     type: 'education',
     icon: '🎓',
     company: 'NIT Kurukshetra',
-    role: 'B.Tech — Electrical Engineering',
+    role: 'B.Tech',
     period: '2019 – 2023',
     location: 'Kurukshetra, India',
     tagline: 'The Origin',
     narrative:
       'Started in circuits, ended up in code. CGPA 8.8 — built my fundamentals, discovered my obsession with building things people actually use. The switch from electrical signals to UI rendering latency felt surprisingly natural.',
-    highlights: ['CGPA 8.8 / 10', 'Electrical Engineering', 'NIT Kurukshetra'],
+    highlights: ['CGPA 8.8 / 10', 'NIT Kurukshetra'],
   },
   {
     id: 2,

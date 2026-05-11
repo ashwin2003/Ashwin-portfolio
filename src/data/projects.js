@@ -9,7 +9,6 @@ export const projects = [
     category: 'Fintech',
     tags: ['React Native', 'Juspay SDK', 'UPI', 'TypeScript'],
     github: 'https://github.com/ashwin2003',
-    caseStudy: '#',
   },
   {
     id: 2,
@@ -21,7 +20,6 @@ export const projects = [
     category: 'Fintech',
     tags: ['React Native', 'WebSockets', 'Redux', 'Fintech'],
     github: 'https://github.com/ashwin2003',
-    caseStudy: '#',
   },
   {
     id: 3,
@@ -33,7 +31,6 @@ export const projects = [
     category: 'Mobile',
     tags: ['React.js', 'React Native', 'GCP', 'Redux'],
     github: 'https://github.com/ashwin2003',
-    caseStudy: '#',
   },
 ]
 

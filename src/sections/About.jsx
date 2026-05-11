@@ -1,10 +1,29 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import { SectionWrapper } from '../components/SectionWrapper'
 import { Button } from '../components/Button'
 import { personal } from '../data/personal'
 
 export function About() {
   const bioParagraphs = useMemo(() => personal.bio.split('\n\n').filter(Boolean), [])
+
+  const PHOTOS = ['/profile.jpg', '/profile2.jpg', '/profile3.jpg']
+  const [photoIndex, setPhotoIndex] = useState(0)
+  const [isFlipping, setIsFlipping] = useState(false)
+  const swapTimer = useRef(null)
+
+  // Cleanup on unmount
+  useEffect(() => () => clearTimeout(swapTimer.current), [])
+
+  const handleFlip = useCallback(() => {
+    if (isFlipping) return
+    setIsFlipping(true)
+    // Swap image at the edge-on moment (~quarter through a 600ms spin)
+    swapTimer.current = setTimeout(() => {
+      setPhotoIndex(i => (i + 1) % PHOTOS.length)
+    }, 150)
+  }, [isFlipping])
+
+  const handleAnimationEnd = useCallback(() => setIsFlipping(false), [])
 
   return (
     <SectionWrapper id="about">
@@ -16,11 +35,28 @@ export function About() {
           {/* Left — Avatar + badges */}
           <div className="flex flex-col items-center gap-6 order-2 md:order-1">
             {/* Avatar */}
-            <div className="relative group">
+            <div className="relative group" style={{ perspective: '800px' }}>
               <div className="absolute -inset-1 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-full blur opacity-30 group-hover:opacity-60 transition-opacity duration-500" aria-hidden="true" />
-              <div className="relative w-52 h-52 sm:w-64 sm:h-64 rounded-full bg-gradient-to-br from-emerald-900 to-zinc-800 dark:from-emerald-900 dark:to-zinc-900 flex items-center justify-center text-7xl ring-4 ring-emerald-500/20 group-hover:ring-emerald-500/40 transition-all duration-300 select-none">
-                👨‍💻
-              </div>
+              <button
+                onClick={handleFlip}
+                onAnimationEnd={handleAnimationEnd}
+                className="relative w-52 h-52 sm:w-64 sm:h-64 rounded-full ring-4 ring-emerald-500/20 group-hover:ring-emerald-500/40 cursor-pointer focus:outline-none focus:ring-4 focus:ring-emerald-500/50 block"
+                aria-label="Click to flip photo"
+                title="Click to flip"
+                style={{
+                  transformStyle: 'preserve-3d',
+                  animation: isFlipping ? 'coinFlip 0.6s linear' : 'none',
+                }}
+              >
+                {/* inner div clips image to circle without blocking 3D rotation */}
+                <div className="w-full h-full rounded-full overflow-hidden">
+                  <img
+                    src={PHOTOS[photoIndex]}
+                    alt="Ashwin Jagarwal"
+                    className="w-full h-full object-cover object-top"
+                  />
+                </div>
+              </button>
             </div>
 
             {/* Badges */}

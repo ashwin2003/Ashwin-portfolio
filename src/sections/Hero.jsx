@@ -111,15 +111,24 @@ export function Hero() {
       <TradingChartBg />
 
       <div className="relative z-10 section-container text-center py-32">
-        {/* Availability badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 mb-8">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 animate-pulse-dot" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-          </span>
-          <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 font-mono">
-            Open to opportunities
-          </span>
+        {/* Badges row */}
+        <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 animate-pulse-dot" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 font-mono">
+              Open to opportunities
+            </span>
+          </div>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/50">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+            <span className="text-xs font-mono text-slate-600 dark:text-zinc-400">
+              Currently ·{' '}
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">@ ZET</span>
+            </span>
+          </div>
         </div>
 
         <h1 className="text-5xl sm:text-7xl lg:text-8xl font-extrabold tracking-tight mb-6">

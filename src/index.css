@@ -48,6 +48,58 @@
   }
 }
 
+@media print {
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  header,
+  footer,
+  #hero,
+  #stats,
+  #testimonials,
+  button:not([data-print]) {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: #0f172a !important;
+    font-size: 12pt;
+  }
+
+  section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .card {
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+
+  a {
+    color: #0f172a !important;
+    text-decoration: none !important;
+  }
+
+  .text-gradient {
+    -webkit-text-fill-color: #0f172a;
+    background: none;
+  }
+}
+
+@keyframes coinFlip {
+  0%   { transform: rotateY(0deg); }
+  100% { transform: rotateY(360deg); }
+}
+
 @layer utilities {
   .text-gradient {
     @apply bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent;

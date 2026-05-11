@@ -7,32 +7,29 @@ function ChapterCard({ chapter, index }) {
   const { ref, isRevealed } = useScrollReveal(0.1)
 
   return (
-    <div className="relative flex items-start md:items-center gap-0">
-      {/* Mobile: dot on the left track */}
-      <div className="md:hidden absolute left-0 top-6 flex flex-col items-center z-10">
-        <div className="w-8 h-8 rounded-full bg-zinc-950 dark:bg-zinc-950 border-2 border-emerald-500 flex items-center justify-center flex-shrink-0">
-          <span className="text-sm" aria-hidden="true">{chapter.icon}</span>
-        </div>
+    <div
+      ref={ref}
+      className={`relative pl-10 md:pl-0 transition-all duration-700
+        ${isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+    >
+      {/* Mobile timeline dot */}
+      <div className="md:hidden absolute left-0 top-5 z-10 w-8 h-8 rounded-full bg-slate-50 dark:bg-zinc-950 border-2 border-emerald-500 flex items-center justify-center">
+        <span className="font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+          {chapter.chapter}
+        </span>
       </div>
 
-      {/* Desktop layout wrapper */}
-      <div className="flex-1 md:grid md:grid-cols-[1fr_auto_1fr] items-center gap-0 w-full pl-12 md:pl-0">
-
-        {/* Left slot */}
-        <div className={`${isLeft ? 'md:flex md:justify-end md:pr-8' : 'hidden md:block'}`}>
+      {/* Desktop: alternating grid — hidden on mobile */}
+      <div className="hidden md:grid md:grid-cols-[1fr_auto_1fr] items-center">
+        <div className={`flex ${isLeft ? 'justify-end pr-8' : ''}`}>
           {isLeft && (
-            <article
-              ref={ref}
-              className={`card card-hover rounded-2xl p-6 max-w-lg w-full transition-all duration-700
-                ${isRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}
-            >
+            <article className="card card-hover rounded-2xl p-6 max-w-lg w-full">
               <ChapterCardContent chapter={chapter} />
             </article>
           )}
         </div>
 
-        {/* Center dot — desktop only */}
-        <div className="hidden md:flex flex-col items-center flex-shrink-0 z-10">
+        <div className="flex flex-col items-center flex-shrink-0 z-10">
           <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-zinc-950 border-2 border-emerald-500 flex items-center justify-center glow-emerald">
             <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
               {chapter.chapter}
@@ -40,28 +37,19 @@ function ChapterCard({ chapter, index }) {
           </div>
         </div>
 
-        {/* Right slot */}
-        <div className={`${!isLeft ? 'md:flex md:justify-start md:pl-8' : 'hidden md:block'}`}>
+        <div className={`flex ${!isLeft ? 'justify-start pl-8' : ''}`}>
           {!isLeft && (
-            <article
-              ref={ref}
-              className={`card card-hover rounded-2xl p-6 max-w-lg w-full transition-all duration-700
-                ${isRevealed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}
-            >
+            <article className="card card-hover rounded-2xl p-6 max-w-lg w-full">
               <ChapterCardContent chapter={chapter} />
             </article>
           )}
         </div>
-
-        {/* Mobile card (always rendered in flow, no grid slot) */}
-        <article
-          ref={!isLeft ? undefined : ref}
-          className={`md:hidden card card-hover rounded-2xl p-5 w-full transition-all duration-700
-            ${isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
-        >
-          <ChapterCardContent chapter={chapter} />
-        </article>
       </div>
+
+      {/* Mobile: single stacked card — hidden on desktop */}
+      <article className="md:hidden card card-hover rounded-2xl p-5">
+        <ChapterCardContent chapter={chapter} />
+      </article>
     </div>
   )
 }

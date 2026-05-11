@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { personal } from '../data/personal'
 
-const NAV = ['About', 'Journey', 'Skills', 'Work', 'Contact']
+const NAV = ['About', 'Journey', 'Skills', 'Stack', 'Contact']
 
 const SOCIAL_ICONS = {
   github: (
@@ -44,7 +44,7 @@ export function Footer() {
               {NAV.map(link => (
                 <li key={link}>
                   <button
-                    onClick={() => scrollTo(link.toLowerCase())}
+                    onClick={() => scrollTo(link === 'Stack' ? 'techstack' : link.toLowerCase())}
                     className="text-sm text-slate-500 dark:text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors duration-200 focus:outline-none focus:underline"
                   >
                     {link}
