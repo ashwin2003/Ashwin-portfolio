@@ -1,27 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 export function useActiveSection(sectionIds) {
   const [activeSection, setActiveSection] = useState(sectionIds[0])
 
-  useEffect(() => {
-    const observers = sectionIds.reduce((acc, id) => {
+  const update = useCallback(() => {
+    const offset = 120 // navbar height + buffer
+
+    let current = sectionIds[0]
+    for (const id of sectionIds) {
       const el = document.getElementById(id)
-      if (!el) return acc
-
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) setActiveSection(id)
-        },
-        { threshold: 0.3, rootMargin: '-80px 0px 0px 0px' }
-      )
-
-      observer.observe(el)
-      acc.push(observer)
-      return acc
-    }, [])
-
-    return () => observers.forEach(o => o.disconnect())
+      if (!el) continue
+      if (el.getBoundingClientRect().top - offset <= 0) {
+        current = id
+      }
+    }
+    setActiveSection(current)
   }, [sectionIds])
+
+  useEffect(() => {
+    window.addEventListener('scroll', update, { passive: true })
+    update()
+    return () => window.removeEventListener('scroll', update)
+  }, [update])
 
   return activeSection
 }
