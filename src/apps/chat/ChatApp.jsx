@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
+import { ChatAuthProvider } from './context/AuthContext'
 import { ChatNavbar } from './components/ChatNavbar'
 
 const Login    = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })))
@@ -16,15 +17,17 @@ function Loader() {
 
 export function ChatApp() {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 pt-14">
-      <ChatNavbar />
-      <Suspense fallback={<Loader />}>
-        <Routes>
-          <Route index             element={<Rooms />} />
-          <Route path="login"      element={<Login />} />
-          <Route path="room/:roomId" element={<ChatRoom />} />
-        </Routes>
-      </Suspense>
-    </div>
+    <ChatAuthProvider>
+      <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 pt-14">
+        <ChatNavbar />
+        <Suspense fallback={<Loader />}>
+          <Routes>
+            <Route index               element={<Rooms />} />
+            <Route path="login"        element={<Login />} />
+            <Route path="room/:roomId" element={<ChatRoom />} />
+          </Routes>
+        </Suspense>
+      </div>
+    </ChatAuthProvider>
   )
 }
