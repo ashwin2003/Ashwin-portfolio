@@ -68,7 +68,7 @@ export function AshwinJagarwal() {
     }
 
     img.onload = bake
-    img.src = '/ashwin.png'
+    img.src = '/ashwin.jpg'
     window.addEventListener('resize', bake, { passive: true })
 
     const onMouseMove = e => {
