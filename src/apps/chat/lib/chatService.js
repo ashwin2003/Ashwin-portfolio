@@ -79,15 +79,16 @@ export function subscribeTyping(roomId, callback) {
 }
 
 // ── Read receipts ─────────────────────────────────────────────────────────────
-export async function markMessagesRead(roomId, userId) {
-  const q    = query(msgsCol(roomId), orderBy('createdAt', 'asc'), limit(50))
-  const snap = await getDocs(q)
+// Accepts already-loaded messages array (no extra getDocs needed)
+export async function markMessagesRead(roomId, userId, messages) {
+  if (!messages?.length) return
   const batch = writeBatch(db)
   let count = 0
-  snap.docs.forEach(d => {
-    const data = d.data()
-    if (data.uid !== userId && !(data.readBy || []).includes(userId)) {
-      batch.update(d.ref, { readBy: arrayUnion(userId) })
+  messages.forEach(m => {
+    if (m.uid !== userId && !(m.readBy || []).includes(userId)) {
+      batch.update(doc(db, 'rooms', roomId, 'messages', m.id), {
+        readBy: arrayUnion(userId),
+      })
       count++
     }
   })

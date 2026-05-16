@@ -78,10 +78,12 @@ function ChatRoomContent() {
 
   useEffect(() => { getRoom(roomId).then(setRoom) }, [roomId])
 
-  // Mark others' messages as read when entering the room
+  // Mark incoming messages as read whenever messages list changes
   useEffect(() => {
-    if (!loading) markMessagesRead(roomId, user.uid)
-  }, [roomId, user.uid, loading])
+    if (!loading && messages.length > 0) {
+      markMessagesRead(roomId, user.uid, messages)
+    }
+  }, [messages, roomId, user.uid, loading])
 
   // Auto-scroll to latest message
   useEffect(() => {
