@@ -220,3 +220,45 @@ export async function searchUsers(queryStr, currentUid) {
     )
     .slice(0, 10)
 }
+
+// ── Friend Requests ───────────────────────────────────────────────────────────
+export async function sendFriendRequest(fromUid, fromInfo, toUid) {
+  await setDoc(doc(db, 'friendRequests', `${fromUid}_${toUid}`), {
+    from:     fromUid,
+    to:       toUid,
+    fromInfo,
+    status:   'pending',
+    createdAt: serverTimestamp(),
+  })
+}
+
+export async function acceptFriendRequest(reqId, myUid, myInfo, fromUid, fromInfo) {
+  await updateDoc(doc(db, 'friendRequests', reqId), { status: 'accepted' })
+  return getOrCreateDM(myUid, myInfo, fromUid, fromInfo)
+}
+
+export async function declineFriendRequest(reqId) {
+  await deleteDoc(doc(db, 'friendRequests', reqId))
+}
+
+export function subscribeIncomingRequests(uid, callback) {
+  const q = query(collection(db, 'friendRequests'), where('to', '==', uid))
+  return onSnapshot(q, snap =>
+    callback(
+      snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(r => r.status === 'pending')
+    )
+  )
+}
+
+export function subscribeOutgoingRequests(uid, callback) {
+  const q = query(collection(db, 'friendRequests'), where('from', '==', uid))
+  return onSnapshot(q, snap =>
+    callback(
+      snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(r => r.status === 'pending')
+    )
+  )
+}

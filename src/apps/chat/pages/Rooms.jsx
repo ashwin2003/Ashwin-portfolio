@@ -4,7 +4,12 @@ import { useChatAuth } from '../context/AuthContext'
 import { useProfile } from '../hooks/useProfile'
 import { useRooms } from '../hooks/useRooms'
 import { useDMs } from '../hooks/useDMs'
-import { createRoom, getOrCreateDM, searchUsers } from '../lib/chatService'
+import { useFriendRequests } from '../hooks/useFriendRequests'
+import {
+  createRoom, getDMId,
+  getOrCreateDM, searchUsers,
+  sendFriendRequest, acceptFriendRequest, declineFriendRequest,
+} from '../lib/chatService'
 import { ProtectedRoute } from '../components/ProtectedRoute'
 
 function timeAgo(ts) {
@@ -14,6 +19,35 @@ function timeAgo(ts) {
   if (secs < 3600)  return `${Math.floor(secs / 60)}m ago`
   if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`
   return ts.toDate().toLocaleDateString()
+}
+
+// ── Shared helpers ────────────────────────────────────────────────────────────
+function Spinner() {
+  return (
+    <div className="flex justify-center py-12">
+      <div className="w-5 h-5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin"/>
+    </div>
+  )
+}
+
+function Empty({ text, sub }) {
+  return (
+    <div className="text-center py-12 text-slate-400 dark:text-zinc-600">
+      <p className="text-sm font-mono">{text}</p>
+      {sub && <p className="text-xs mt-1">{sub}</p>}
+    </div>
+  )
+}
+
+function Avatar({ src, name, size, rounded }) {
+  const cls = `w-${size} h-${size} flex-shrink-0 ${rounded === 'full' ? 'rounded-full' : 'rounded-xl'}`
+  if (src) return <img src={src} alt={name} className={`${cls} object-cover ring-1 ring-emerald-500/20`}/>
+  return (
+    <div className={`${cls} bg-slate-200 dark:bg-zinc-700 flex items-center justify-center
+                    text-slate-500 dark:text-zinc-400 font-semibold text-sm`}>
+      {(name || '?')[0].toUpperCase()}
+    </div>
+  )
 }
 
 // ── Rooms Tab ─────────────────────────────────────────────────────────────────
@@ -72,10 +106,8 @@ function RoomsTab({ rooms, loading, user, navigate }) {
         </form>
       )}
 
-      {loading ? (
-        <Spinner />
-      ) : rooms.length === 0 ? (
-        <Empty icon="room" text="No rooms yet. Create the first one ↑" />
+      {loading ? <Spinner /> : rooms.length === 0 ? (
+        <Empty text="No rooms yet. Create the first one ↑" />
       ) : (
         <ul className="flex flex-col gap-2">
           {rooms.map(room => (
@@ -115,59 +147,128 @@ function RoomsTab({ rooms, loading, user, navigate }) {
   )
 }
 
-// ── Messages Tab (DMs) ────────────────────────────────────────────────────────
-function MessagesTab({ dms, loading, uid, navigate }) {
-  if (loading) return <Spinner />
+// ── Messages Tab ──────────────────────────────────────────────────────────────
+function MessagesTab({ dms, loading, uid, navigate, incoming, user, profile }) {
+  const [accepting, setAccepting] = useState(null)
+  const [declining, setDeclining] = useState(null)
 
-  if (dms.length === 0) return (
-    <Empty icon="dm" text="No direct messages yet." sub="Search for people in the People tab." />
-  )
+  const handleAccept = async req => {
+    setAccepting(req.id)
+    try {
+      const myInfo = {
+        displayName: user.displayName || '',
+        photoURL:    user.photoURL    || '',
+        username:    profile?.username || '',
+      }
+      const dmId = await acceptFriendRequest(req.id, uid, myInfo, req.from, req.fromInfo)
+      navigate(`/chat/dm/${dmId}`)
+    } finally { setAccepting(null) }
+  }
+
+  const handleDecline = async req => {
+    setDeclining(req.id)
+    try { await declineFriendRequest(req.id) }
+    finally { setDeclining(null) }
+  }
+
+  const hasContent = incoming.length > 0 || dms.length > 0
 
   return (
-    <ul className="flex flex-col gap-2">
-      {dms.map(dm => {
-        const otherUid = dm.participants.find(p => p !== uid)
-        const other    = dm.participantInfo?.[otherUid] || {}
-        const label    = other.username ? `@${other.username}` : (other.displayName || 'Unknown')
-        const avatar   = other.customPhotoURL || other.photoURL
-        return (
-          <li key={dm.id}>
-            <button onClick={() => navigate(`/chat/dm/${dm.id}`)}
-              className="card card-hover w-full text-left p-4 flex items-center gap-3
-                         hover:shadow-sm transition-all duration-200">
-              <Avatar src={avatar} name={label} size={10} rounded="full" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-slate-900 dark:text-white text-sm truncate">
-                    {label}
-                  </span>
-                  <span className="text-xs text-slate-400 dark:text-zinc-600 flex-shrink-0 font-mono">
-                    {timeAgo(dm.lastMessageAt)}
-                  </span>
+    <div>
+      {/* ── Incoming requests ── */}
+      {incoming.length > 0 && (
+        <div className="mb-5">
+          <p className="text-xs font-mono font-semibold text-slate-400 dark:text-zinc-500
+                       uppercase tracking-wider mb-3">
+            Requests · {incoming.length}
+          </p>
+          <div className="flex flex-col gap-2">
+            {incoming.map(req => {
+              const info  = req.fromInfo || {}
+              const label = info.username ? `@${info.username}` : (info.displayName || 'Unknown')
+              return (
+                <div key={req.id} className="card p-4 flex items-center gap-3">
+                  <Avatar src={info.photoURL} name={label} size={10} rounded="full" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-900 dark:text-white text-sm truncate">{label}</p>
+                    <p className="text-xs text-slate-500 dark:text-zinc-500 mt-0.5">wants to message you</p>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button onClick={() => handleDecline(req)} disabled={declining === req.id}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700
+                                 text-xs font-medium text-slate-500 dark:text-zinc-400
+                                 hover:bg-slate-50 dark:hover:bg-zinc-800
+                                 disabled:opacity-50 transition-colors">
+                      {declining === req.id ? '…' : 'Decline'}
+                    </button>
+                    <button onClick={() => handleAccept(req)} disabled={accepting === req.id}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600
+                                 disabled:opacity-50 text-white text-xs font-medium transition-colors">
+                      {accepting === req.id ? '…' : 'Accept'}
+                    </button>
+                  </div>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-zinc-500 truncate mt-0.5">
-                  {dm.lastMessage || 'No messages yet'}
-                </p>
-              </div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                className="text-slate-300 dark:text-zinc-700 flex-shrink-0">
-                <path d="M9 18l6-6-6-6"/>
-              </svg>
-            </button>
-          </li>
-        )
-      })}
-    </ul>
+              )
+            })}
+          </div>
+          {dms.length > 0 && (
+            <div className="mt-5 mb-1 border-t border-slate-100 dark:border-zinc-800"/>
+          )}
+        </div>
+      )}
+
+      {/* ── DM conversations ── */}
+      {loading ? <Spinner /> : dms.length === 0 ? (
+        !hasContent ? (
+          <Empty text="No direct messages yet." sub="Search for people in the People tab." />
+        ) : null
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {dms.map(dm => {
+            const otherUid = dm.participants.find(p => p !== uid)
+            const other    = dm.participantInfo?.[otherUid] || {}
+            const label    = other.username ? `@${other.username}` : (other.displayName || 'Unknown')
+            const avatar   = other.customPhotoURL || other.photoURL
+            return (
+              <li key={dm.id}>
+                <button onClick={() => navigate(`/chat/dm/${dm.id}`)}
+                  className="card card-hover w-full text-left p-4 flex items-center gap-3
+                             hover:shadow-sm transition-all duration-200">
+                  <Avatar src={avatar} name={label} size={10} rounded="full" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-slate-900 dark:text-white text-sm truncate">
+                        {label}
+                      </span>
+                      <span className="text-xs text-slate-400 dark:text-zinc-600 flex-shrink-0 font-mono">
+                        {timeAgo(dm.lastMessageAt)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-zinc-500 truncate mt-0.5">
+                      {dm.lastMessage || 'No messages yet'}
+                    </p>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                    className="text-slate-300 dark:text-zinc-700 flex-shrink-0">
+                    <path d="M9 18l6-6-6-6"/>
+                  </svg>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
   )
 }
 
 // ── People Tab ────────────────────────────────────────────────────────────────
-function PeopleTab({ uid, myInfo, navigate }) {
+function PeopleTab({ uid, myInfo, navigate, dms, outgoing }) {
   const [queryStr,  setQueryStr]  = useState('')
   const [results,   setResults]   = useState([])
   const [searching, setSearching] = useState(false)
-  const [starting,  setStarting]  = useState(null)
+  const [sending,   setSending]   = useState(null)
 
   useEffect(() => {
     if (!queryStr.trim()) { setResults([]); return }
@@ -180,17 +281,21 @@ function PeopleTab({ uid, myInfo, navigate }) {
     return () => clearTimeout(t)
   }, [queryStr, uid])
 
-  const handleMessage = async other => {
-    setStarting(other.uid)
-    try {
-      const otherInfo = {
-        displayName: other.displayName || '',
-        photoURL:    other.customPhotoURL || other.photoURL || '',
-        username:    other.username || '',
-      }
-      const dmId = await getOrCreateDM(uid, myInfo, other.uid, otherInfo)
-      navigate(`/chat/dm/${dmId}`)
-    } finally { setStarting(null) }
+  const getRelation = otherUid => {
+    if (dms.some(d => d.id === getDMId(uid, otherUid))) return 'connected'
+    if (outgoing.some(r => r.to === otherUid))           return 'pending'
+    return 'none'
+  }
+
+  const handleAction = async other => {
+    const rel = getRelation(other.uid)
+    if (rel === 'connected') {
+      navigate(`/chat/dm/${getDMId(uid, other.uid)}`)
+    } else if (rel === 'none') {
+      setSending(other.uid)
+      try { await sendFriendRequest(uid, myInfo, other.uid) }
+      finally { setSending(null) }
+    }
   }
 
   return (
@@ -209,13 +314,14 @@ function PeopleTab({ uid, myInfo, navigate }) {
                      focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"/>
       </div>
 
-      {searching ? (
-        <Spinner />
-      ) : results.length > 0 ? (
+      {searching ? <Spinner /> : results.length > 0 ? (
         <ul className="flex flex-col gap-2">
           {results.map(u => {
             const label  = u.username ? `@${u.username}` : (u.displayName || 'Unknown')
             const avatar = u.customPhotoURL || u.photoURL
+            const rel    = getRelation(u.uid)
+            const busy   = sending === u.uid
+
             return (
               <li key={u.uid} className="card p-3 flex items-center gap-3">
                 <Avatar src={avatar} name={label} size={10} rounded="full" />
@@ -228,11 +334,21 @@ function PeopleTab({ uid, myInfo, navigate }) {
                     <p className="text-xs text-slate-400 dark:text-zinc-600 truncate mt-0.5">{u.bio}</p>
                   )}
                 </div>
-                <button onClick={() => handleMessage(u)} disabled={starting === u.uid}
-                  className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600
-                             disabled:opacity-50 text-white text-xs font-medium
-                             transition-colors flex-shrink-0">
-                  {starting === u.uid ? '…' : 'Message'}
+                <button
+                  onClick={() => handleAction(u)}
+                  disabled={rel === 'pending' || busy}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0
+                    ${rel === 'pending'
+                      ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 cursor-not-allowed border border-amber-200 dark:border-amber-500/20'
+                      : 'bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50'
+                    }`}>
+                  {busy
+                    ? '…'
+                    : rel === 'connected'
+                      ? 'Message'
+                      : rel === 'pending'
+                        ? 'Pending…'
+                        : 'Add'}
                 </button>
               </li>
             )
@@ -298,9 +414,7 @@ function RecentActivity({ rooms, dms, uid, navigate }) {
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-slate-800 dark:text-zinc-200 truncate">
-                    {label}
-                  </span>
+                  <span className="text-sm font-medium text-slate-800 dark:text-zinc-200 truncate">{label}</span>
                   <span className="text-[10px] text-slate-400 dark:text-zinc-600 font-mono flex-shrink-0">
                     {timeAgo(item.lastMessageAt)}
                   </span>
@@ -321,49 +435,14 @@ function RecentActivity({ rooms, dms, uid, navigate }) {
   )
 }
 
-// ── Shared helpers ────────────────────────────────────────────────────────────
-function Spinner() {
-  return (
-    <div className="flex justify-center py-12">
-      <div className="w-5 h-5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin"/>
-    </div>
-  )
-}
-
-function Empty({ text, sub }) {
-  return (
-    <div className="text-center py-12 text-slate-400 dark:text-zinc-600">
-      <p className="text-sm font-mono">{text}</p>
-      {sub && <p className="text-xs mt-1">{sub}</p>}
-    </div>
-  )
-}
-
-function Avatar({ src, name, size, rounded }) {
-  const cls = `w-${size} h-${size} flex-shrink-0 ${rounded === 'full' ? 'rounded-full' : 'rounded-xl'}`
-  if (src) return <img src={src} alt={name} className={`${cls} object-cover ring-1 ring-emerald-500/20`}/>
-  return (
-    <div className={`${cls} bg-slate-200 dark:bg-zinc-700
-                    flex items-center justify-center
-                    text-slate-500 dark:text-zinc-400 font-semibold text-sm`}>
-      {(name || '?')[0].toUpperCase()}
-    </div>
-  )
-}
-
 // ── Hub Root ──────────────────────────────────────────────────────────────────
-const TABS = [
-  { key: 'rooms',    label: 'Rooms'    },
-  { key: 'messages', label: 'Messages' },
-  { key: 'people',   label: 'People'   },
-]
-
 function ChatHubContent() {
-  const { user }   = useChatAuth()
+  const { user }    = useChatAuth()
   const { profile } = useProfile(user?.uid)
   const { rooms, loading: roomsLoading } = useRooms()
   const { dms,   loading: dmsLoading   } = useDMs(user?.uid)
-  const navigate   = useNavigate()
+  const { incoming, outgoing }           = useFriendRequests(user?.uid)
+  const navigate    = useNavigate()
   const [tab, setTab] = useState('rooms')
 
   const myInfo = {
@@ -372,31 +451,51 @@ function ChatHubContent() {
     username:    profile?.username || '',
   }
 
+  const TABS = [
+    { key: 'rooms',    label: 'Rooms'    },
+    { key: 'messages', label: 'Messages', badge: incoming.length },
+    { key: 'people',   label: 'People'   },
+  ]
+
   return (
     <div className="w-full max-w-2xl mx-auto px-4 py-6 sm:py-8">
 
       {/* Tab bar */}
       <div className="flex gap-1 mb-6 bg-slate-100 dark:bg-zinc-800/60 rounded-xl p-1">
-        {TABS.map(({ key, label }) => (
+        {TABS.map(({ key, label, badge }) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-150
+            className={`relative flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-150
               ${tab === key
                 ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-sm'
                 : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-300'
               }`}>
             {label}
+            {badge > 0 && (
+              <span className="absolute top-1 right-3 min-w-[16px] h-4 rounded-full
+                               bg-red-500 text-white text-[10px] font-bold
+                               flex items-center justify-center px-1">
+                {badge > 9 ? '9+' : badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
+      {/* Tab content */}
       {tab === 'rooms' && (
         <RoomsTab rooms={rooms} loading={roomsLoading} user={user} navigate={navigate} />
       )}
       {tab === 'messages' && (
-        <MessagesTab dms={dms} loading={dmsLoading} uid={user?.uid} navigate={navigate} />
+        <MessagesTab
+          dms={dms} loading={dmsLoading} uid={user?.uid} navigate={navigate}
+          incoming={incoming} user={user} profile={profile}
+        />
       )}
       {tab === 'people' && (
-        <PeopleTab uid={user?.uid} myInfo={myInfo} navigate={navigate} />
+        <PeopleTab
+          uid={user?.uid} myInfo={myInfo} navigate={navigate}
+          dms={dms} outgoing={outgoing}
+        />
       )}
 
       <RecentActivity rooms={rooms} dms={dms} uid={user?.uid} navigate={navigate} />
