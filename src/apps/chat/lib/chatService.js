@@ -1,7 +1,7 @@
 import {
   collection, doc, addDoc, updateDoc, deleteDoc,
   query, orderBy, limit, serverTimestamp, onSnapshot,
-  getDocs, setDoc, getDoc,
+  getDocs, setDoc, getDoc, deleteField, arrayUnion, writeBatch,
 } from 'firebase/firestore'
 import { db } from '../../../lib/firebase'
 
@@ -59,6 +59,39 @@ export function subscribeMessages(roomId, callback, msgLimit = 50) {
 
 export async function deleteMessage(roomId, messageId) {
   return deleteDoc(doc(db, 'rooms', roomId, 'messages', messageId))
+}
+
+// ── Typing indicator ──────────────────────────────────────────────────────────
+export async function setTyping(roomId, user, isTyping) {
+  const roomRef = doc(db, 'rooms', roomId)
+  await updateDoc(roomRef, {
+    [`typing.${user.uid}`]: isTyping
+      ? { displayName: user.displayName, at: serverTimestamp() }
+      : deleteField(),
+  })
+}
+
+export function subscribeTyping(roomId, callback) {
+  return onSnapshot(doc(db, 'rooms', roomId), snap => {
+    const typing = snap.data()?.typing || {}
+    callback(typing)
+  })
+}
+
+// ── Read receipts ─────────────────────────────────────────────────────────────
+export async function markMessagesRead(roomId, userId) {
+  const q    = query(msgsCol(roomId), orderBy('createdAt', 'asc'), limit(50))
+  const snap = await getDocs(q)
+  const batch = writeBatch(db)
+  let count = 0
+  snap.docs.forEach(d => {
+    const data = d.data()
+    if (data.uid !== userId && !(data.readBy || []).includes(userId)) {
+      batch.update(d.ref, { readBy: arrayUnion(userId) })
+      count++
+    }
+  })
+  if (count > 0) await batch.commit()
 }
 
 // ── User profile (store display name + photo in Firestore) ────────────────────
