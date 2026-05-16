@@ -95,7 +95,7 @@ export async function markMessagesRead(roomId, userId, messages) {
   if (count > 0) await batch.commit()
 }
 
-// ── User profile (store display name + photo in Firestore) ────────────────────
+// ── User profile ──────────────────────────────────────────────────────────────
 export async function upsertUser(user) {
   await setDoc(doc(db, 'users', user.uid), {
     displayName: user.displayName,
@@ -103,4 +103,28 @@ export async function upsertUser(user) {
     email:       user.email,
     lastSeen:    serverTimestamp(),
   }, { merge: true })
+}
+
+export async function getUserProfile(uid) {
+  const snap = await getDoc(doc(db, 'users', uid))
+  return snap.exists() ? snap.data() : null
+}
+
+export function subscribeProfile(uid, callback) {
+  return onSnapshot(doc(db, 'users', uid), snap => {
+    callback(snap.exists() ? snap.data() : null)
+  })
+}
+
+export async function updateUserProfile(uid, { username, bio, customPhotoURL }) {
+  const data = { username, bio, updatedAt: serverTimestamp() }
+  if (customPhotoURL !== undefined) data.customPhotoURL = customPhotoURL
+  await updateDoc(doc(db, 'users', uid), data)
+}
+
+export async function isUsernameTaken(username, myUid) {
+  const { getDocs: gd, where, query: q2 } = await import('firebase/firestore')
+  const snap = await gd(q2(collection(db, 'users'),
+    where('username', '==', username.toLowerCase())))
+  return snap.docs.some(d => d.id !== myUid)
 }
