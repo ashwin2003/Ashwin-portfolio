@@ -10,6 +10,9 @@ import { CustomCursor } from './components/CustomCursor'
 import { NotFound } from './pages/NotFound'
 import { AshwinJagarwal } from './pages/AshwinJagarwal'
 
+const EcommerceApp = lazy(() => import('./apps/ecommerce/EcommerceApp').then(m => ({ default: m.EcommerceApp })))
+const ChatApp      = lazy(() => import('./apps/chat/ChatApp').then(m => ({ default: m.ChatApp })))
+
 const About        = lazy(() => import('./sections/About').then(m => ({ default: m.About })))
 const Journey      = lazy(() => import('./sections/Journey').then(m => ({ default: m.Journey })))
 const Stats        = lazy(() => import('./sections/Stats').then(m => ({ default: m.Stats })))
@@ -58,8 +61,10 @@ export default function App() {
         {!splashDone && <SplashScreen onDone={handleSplashDone} />}
         <Routes>
           <Route path="/" element={<MainContent />} />
+          <Route path="/ecommerce/*"    element={<EcommerceApp />} />
+          <Route path="/chat/*"         element={<ChatApp />} />
           <Route path="/ashwinJagarwal" element={<AshwinJagarwal />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="*"               element={<NotFound />} />
         </Routes>
         <ScrollToTop />
       </div>
