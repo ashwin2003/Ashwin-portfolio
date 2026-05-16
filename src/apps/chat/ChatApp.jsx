@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import { ChatAuthProvider } from './context/AuthContext'
 import { ChatNavbar } from './components/ChatNavbar'
 
@@ -15,11 +15,15 @@ function Loader() {
   )
 }
 
-export function ChatApp() {
+function ChatShell() {
+  const { pathname } = useLocation()
+  const inRoom = pathname.includes('/room/')
+
   return (
-    <ChatAuthProvider>
-      <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 pt-14">
-        <ChatNavbar />
+    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950">
+      {/* Navbar shown everywhere except inside a room (room renders its own) */}
+      {!inRoom && <ChatNavbar />}
+      <div className={inRoom ? '' : 'pt-14'}>
         <Suspense fallback={<Loader />}>
           <Routes>
             <Route index               element={<Rooms />} />
@@ -28,6 +32,14 @@ export function ChatApp() {
           </Routes>
         </Suspense>
       </div>
+    </div>
+  )
+}
+
+export function ChatApp() {
+  return (
+    <ChatAuthProvider>
+      <ChatShell />
     </ChatAuthProvider>
   )
 }
