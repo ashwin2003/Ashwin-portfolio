@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { personal } from '../data/personal'
 
-const NAV = ['About', 'Journey', 'Skills', 'Stack', 'Contact']
+const NAV = ['About', 'Journey', 'Stack', 'Contact']
 
 const SOCIAL_ICONS = {
   github: (
@@ -23,12 +24,15 @@ const SOCIAL_ICONS = {
 
 export function Footer() {
   const year = useMemo(() => new Date().getFullYear(), [])
+  const navigate = useNavigate()
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
 
   return (
     <footer className="bg-white dark:bg-zinc-900 border-t border-slate-200 dark:border-zinc-800">
       <div className="section-container py-10">
+
+        {/* Row: logo | nav | social */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -54,7 +58,7 @@ export function Footer() {
             </ul>
           </nav>
 
-          <div className="flex gap-3">
+          <div className="flex gap-4">
             {Object.entries(personal.social).map(([key, url]) => (
               <a
                 key={key}
@@ -70,9 +74,17 @@ export function Footer() {
           </div>
         </div>
 
+        {/* Copyright — centered below */}
         <p className="text-center text-xs text-slate-400 dark:text-zinc-600 mt-6 font-mono">
           {personal.name} · Built with React · © {year}
+          <button
+            onClick={() => navigate('/ashwinJagarwal')}
+            aria-label="Easter egg"
+            className="ml-2 easter-star focus:outline-none"
+            tabIndex={-1}
+          >✦</button>
         </p>
+
       </div>
     </footer>
   )
