@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useChatAuth } from '../context/AuthContext'
 import { useMessages } from '../hooks/useMessages'
 import { useTyping } from '../hooks/useTyping'
+import { useProfile } from '../hooks/useProfile'
 import { sendMessage, getRoom, setTyping, markMessagesRead } from '../lib/chatService'
 import { ProtectedRoute } from '../components/ProtectedRoute'
 import { ChatNavbar } from '../components/ChatNavbar'
@@ -67,6 +68,7 @@ function ChatRoomContent() {
   const { user }              = useChatAuth()
   const { messages, loading } = useMessages(roomId)
   const typers                = useTyping(roomId, user.uid)
+  const { profile }           = useProfile(user.uid)
 
   const [room,    setRoom]    = useState(null)
   const [text,    setText]    = useState('')
@@ -123,7 +125,7 @@ function ChatRoomContent() {
     clearTimeout(typingTimer.current)
     setTyping(roomId, user, false)
     try {
-      await sendMessage(roomId, msg, user)
+      await sendMessage(roomId, msg, user, profile?.username || '')
     } finally {
       setSending(false)
       inputRef.current?.focus()
@@ -176,7 +178,7 @@ function ChatRoomContent() {
                       {!isMe && !prevSame && (
                         <span className="text-[11px] text-slate-400 dark:text-zinc-500
                                          font-mono mb-1 px-1">
-                          {msg.displayName}
+                          {msg.username ? `@${msg.username}` : msg.displayName}
                         </span>
                       )}
 

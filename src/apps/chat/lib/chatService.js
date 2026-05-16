@@ -34,12 +34,13 @@ export async function getRoom(roomId) {
 }
 
 // ── Messages ──────────────────────────────────────────────────────────────────
-export async function sendMessage(roomId, text, user) {
+export async function sendMessage(roomId, text, user, username) {
   const ref = await addDoc(msgsCol(roomId), {
     text,
     uid:         user.uid,
     displayName: user.displayName,
     photoURL:    user.photoURL,
+    ...(username ? { username } : {}),
     createdAt:   serverTimestamp(),
   })
   // Update room preview
