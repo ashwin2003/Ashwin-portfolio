@@ -43,11 +43,11 @@ function ChatRoomContent() {
   }
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 3.5rem)' }}>
+    <div className="flex flex-col" style={{ height: '100vh' }}>
       <ChatNavbar roomName={room?.name} />
 
-      {/* ── Messages scroll area ── */}
-      <div className="flex-1 overflow-y-auto py-4">
+      {/* ── Messages scroll area — pt-14 clears the fixed navbar ── */}
+      <div className="flex-1 overflow-y-auto pt-14 pb-4">
         {/* Centered column — same width as input */}
         <div className="max-w-2xl mx-auto px-4 space-y-1">
 
