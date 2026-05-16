@@ -1,6 +1,6 @@
 import {
   collection, doc, addDoc, updateDoc, deleteDoc,
-  query, orderBy, limit, serverTimestamp, onSnapshot,
+  query, where, orderBy, limit, serverTimestamp, onSnapshot,
   getDocs, setDoc, getDoc, deleteField, arrayUnion, writeBatch,
 } from 'firebase/firestore'
 import { db } from '../../../lib/firebase'
@@ -124,8 +124,99 @@ export async function updateUserProfile(uid, { username, bio, customPhotoURL }) 
 }
 
 export async function isUsernameTaken(username, myUid) {
-  const { getDocs: gd, where, query: q2 } = await import('firebase/firestore')
-  const snap = await gd(q2(collection(db, 'users'),
+  const snap = await getDocs(query(collection(db, 'users'),
     where('username', '==', username.toLowerCase())))
   return snap.docs.some(d => d.id !== myUid)
+}
+
+// ── Direct Messages ───────────────────────────────────────────────────────────
+export function getDMId(uid1, uid2) {
+  return [uid1, uid2].sort().join('_')
+}
+
+export async function getOrCreateDM(myUid, myInfo, otherUid, otherInfo) {
+  const dmId  = getDMId(myUid, otherUid)
+  const dmRef = doc(db, 'dms', dmId)
+  const snap  = await getDoc(dmRef)
+  if (!snap.exists()) {
+    await setDoc(dmRef, {
+      participants: [myUid, otherUid],
+      participantInfo: {
+        [myUid]:    myInfo,
+        [otherUid]: otherInfo,
+      },
+      lastMessage:   '',
+      lastMessageAt: serverTimestamp(),
+      createdAt:     serverTimestamp(),
+    })
+  }
+  return dmId
+}
+
+export async function getDM(dmId) {
+  const snap = await getDoc(doc(db, 'dms', dmId))
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null
+}
+
+export function subscribeDMs(uid, callback) {
+  const q = query(collection(db, 'dms'), where('participants', 'array-contains', uid))
+  return onSnapshot(q, snap => {
+    const dms = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    dms.sort((a, b) =>
+      (b.lastMessageAt?.toMillis?.() || 0) - (a.lastMessageAt?.toMillis?.() || 0))
+    callback(dms)
+  })
+}
+
+export async function sendDMMessage(dmId, text, user, username) {
+  await addDoc(collection(db, 'dms', dmId, 'messages'), {
+    text,
+    uid:         user.uid,
+    displayName: user.displayName,
+    photoURL:    user.photoURL,
+    ...(username ? { username } : {}),
+    createdAt:   serverTimestamp(),
+  })
+  await updateDoc(doc(db, 'dms', dmId), {
+    lastMessage:   text,
+    lastMessageAt: serverTimestamp(),
+  })
+}
+
+export function subscribeDMMessages(dmId, callback, msgLimit = 50) {
+  const q = query(
+    collection(db, 'dms', dmId, 'messages'),
+    orderBy('createdAt', 'asc'),
+    limit(msgLimit),
+  )
+  return onSnapshot(q, snap =>
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+  )
+}
+
+export async function markDMsRead(dmId, userId, messages) {
+  if (!messages?.length) return
+  const batch = writeBatch(db)
+  let count = 0
+  messages.forEach(m => {
+    if (m.uid !== userId && !(m.readBy || []).includes(userId)) {
+      batch.update(doc(db, 'dms', dmId, 'messages', m.id), { readBy: arrayUnion(userId) })
+      count++
+    }
+  })
+  if (count > 0) await batch.commit()
+}
+
+export async function searchUsers(queryStr, currentUid) {
+  if (!queryStr.trim()) return []
+  const snap = await getDocs(collection(db, 'users'))
+  const q    = queryStr.toLowerCase()
+  return snap.docs
+    .filter(d => d.id !== currentUid)
+    .map(d => ({ uid: d.id, ...d.data() }))
+    .filter(u =>
+      (u.username    && u.username.includes(q)) ||
+      (u.displayName && u.displayName.toLowerCase().includes(q))
+    )
+    .slice(0, 10)
 }

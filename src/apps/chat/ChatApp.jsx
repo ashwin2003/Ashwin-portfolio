@@ -6,6 +6,7 @@ import { ChatNavbar } from './components/ChatNavbar'
 const Login    = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })))
 const Rooms    = lazy(() => import('./pages/Rooms').then(m => ({ default: m.Rooms })))
 const ChatRoom = lazy(() => import('./pages/ChatRoom').then(m => ({ default: m.ChatRoom })))
+const DMRoom   = lazy(() => import('./pages/DMRoom').then(m => ({ default: m.DMRoom })))
 
 function Loader() {
   return (
@@ -17,7 +18,7 @@ function Loader() {
 
 function ChatShell() {
   const { pathname } = useLocation()
-  const inRoom = pathname.includes('/room/')
+  const inRoom = pathname.includes('/room/') || pathname.includes('/dm/')
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950">
@@ -29,6 +30,7 @@ function ChatShell() {
             <Route index               element={<Rooms />} />
             <Route path="login"        element={<Login />} />
             <Route path="room/:roomId" element={<ChatRoom />} />
+            <Route path="dm/:dmId"     element={<DMRoom />} />
           </Routes>
         </Suspense>
       </div>
