@@ -65,6 +65,9 @@ function DMRoomContent() {
   const typers                = useDMTyping(dmId, user.uid)
   const navigate              = useNavigate()
 
+  // dm is loaded below; derive otherUid so useProfile can subscribe immediately on dm load
+  const [otherUid, setOtherUid] = useState(null)
+
   const [dm,        setDM]        = useState(null)
   const [dmChecked, setDMChecked] = useState(false)
   const [text,      setText]      = useState('')
@@ -81,6 +84,7 @@ function DMRoomContent() {
         return
       }
       setDM(result)
+      setOtherUid(result.participants.find(p => p !== user.uid) || null)
       setDMChecked(true)
     })
   }, [dmId, user.uid, navigate])
@@ -101,10 +105,11 @@ function DMRoomContent() {
     }
   }, [dmId, user])
 
-  const otherUid   = dm?.participants?.find(p => p !== user.uid)
+  const { profile: otherProfile } = useProfile(otherUid)
   const otherInfo  = dm?.participantInfo?.[otherUid] || {}
-  const otherLabel = otherInfo.username
-    ? `@${otherInfo.username}`
+  // Prefer live profile username, fall back to participantInfo, then displayName
+  const otherLabel = otherProfile?.username
+    ? `@${otherProfile.username}`
     : (otherInfo.displayName || '')
 
   const handleInput = useCallback(e => {
@@ -189,7 +194,7 @@ function DMRoomContent() {
                     {!isMe && !prevSame && (
                       <span className="text-[11px] text-slate-400 dark:text-zinc-500
                                        font-mono mb-1 px-1">
-                        {otherInfo.username ? `@${otherInfo.username}` : (otherInfo.displayName || msg.displayName)}
+                        {otherLabel || msg.displayName}
                       </span>
                     )}
 
