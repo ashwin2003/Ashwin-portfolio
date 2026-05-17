@@ -189,7 +189,7 @@ function DMRoomContent() {
                     {!isMe && !prevSame && (
                       <span className="text-[11px] text-slate-400 dark:text-zinc-500
                                        font-mono mb-1 px-1">
-                        {msg.username ? `@${msg.username}` : msg.displayName}
+                        {otherInfo.username ? `@${otherInfo.username}` : (otherInfo.displayName || msg.displayName)}
                       </span>
                     )}
 
