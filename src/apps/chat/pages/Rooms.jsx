@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useChatAuth } from '../context/AuthContext'
 import { useProfile } from '../hooks/useProfile'
+import { useProfiles } from '../hooks/useProfiles'
 import { useRooms } from '../hooks/useRooms'
 import { useDMs } from '../hooks/useDMs'
 import { useFriendRequests } from '../hooks/useFriendRequests'
@@ -148,7 +149,7 @@ function RoomsTab({ rooms, loading, user, navigate }) {
 }
 
 // ── Messages Tab ──────────────────────────────────────────────────────────────
-function MessagesTab({ dms, loading, uid, navigate, incoming, user, profile }) {
+function MessagesTab({ dms, loading, uid, navigate, incoming, user, profile, otherProfiles }) {
   const [accepting, setAccepting] = useState(null)
   const [declining, setDeclining] = useState(null)
 
@@ -225,10 +226,11 @@ function MessagesTab({ dms, loading, uid, navigate, incoming, user, profile }) {
       ) : (
         <ul className="flex flex-col gap-2">
           {dms.map(dm => {
-            const otherUid = dm.participants.find(p => p !== uid)
-            const other    = dm.participantInfo?.[otherUid] || {}
-            const label    = other.username ? `@${other.username}` : (other.displayName || 'Unknown')
-            const avatar   = other.customPhotoURL || other.photoURL
+            const otherUid    = dm.participants.find(p => p !== uid)
+            const other       = dm.participantInfo?.[otherUid] || {}
+            const liveProfile = otherProfiles[otherUid]
+            const label       = liveProfile?.username ? `@${liveProfile.username}` : (other.displayName || 'Unknown')
+            const avatar      = liveProfile?.customPhotoURL || other.photoURL
             return (
               <li key={dm.id}>
                 <button onClick={() => navigate(`/chat/dm/${dm.id}`)}
@@ -407,7 +409,7 @@ function PeopleTab({ uid, myInfo, navigate, dms, outgoing, incoming }) {
 }
 
 // ── Recent Activity ───────────────────────────────────────────────────────────
-function RecentActivity({ rooms, dms, uid, navigate }) {
+function RecentActivity({ rooms, dms, uid, navigate, otherProfiles }) {
   const items = useMemo(() => {
     const roomItems = rooms.map(r => ({ ...r, _type: 'room' }))
     const dmItems   = dms.map(d => ({ ...d, _type: 'dm' }))
@@ -435,10 +437,11 @@ function RecentActivity({ rooms, dms, uid, navigate }) {
             label = item.name
             href  = `/chat/room/${item.id}`
           } else {
-            const otherUid = item.participants.find(p => p !== uid)
-            const other    = item.participantInfo?.[otherUid] || {}
-            label  = other.username ? `@${other.username}` : (other.displayName || 'Unknown')
-            avatar = other.customPhotoURL || other.photoURL
+            const otherUid    = item.participants.find(p => p !== uid)
+            const other       = item.participantInfo?.[otherUid] || {}
+            const liveProfile = otherProfiles[otherUid]
+            label  = liveProfile?.username ? `@${liveProfile.username}` : (other.displayName || 'Unknown')
+            avatar = liveProfile?.customPhotoURL || other.photoURL
             href   = `/chat/dm/${item.id}`
           }
 
@@ -488,6 +491,15 @@ function ChatHubContent() {
   const navigate    = useNavigate()
   const [tab, setTab] = useState('rooms')
 
+  // Live profiles for all DM participants so username is always up to date
+  const otherUids = useMemo(() => {
+    const uids = dms
+      .map(dm => dm.participants?.find(p => p !== user?.uid))
+      .filter(Boolean)
+    return [...new Set(uids)]
+  }, [dms, user?.uid])
+  const otherProfiles = useProfiles(otherUids)
+
   const myInfo = {
     displayName: user?.displayName || '',
     photoURL:    user?.photoURL    || '',
@@ -532,6 +544,7 @@ function ChatHubContent() {
         <MessagesTab
           dms={dms} loading={dmsLoading} uid={user?.uid} navigate={navigate}
           incoming={incoming} user={user} profile={profile}
+          otherProfiles={otherProfiles}
         />
       )}
       {tab === 'people' && (
@@ -541,7 +554,7 @@ function ChatHubContent() {
         />
       )}
 
-      <RecentActivity rooms={rooms} dms={dms} uid={user?.uid} navigate={navigate} />
+      <RecentActivity rooms={rooms} dms={dms} uid={user?.uid} navigate={navigate} otherProfiles={otherProfiles} />
     </div>
   )
 }
