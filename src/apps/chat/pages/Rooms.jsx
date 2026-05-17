@@ -264,11 +264,13 @@ function MessagesTab({ dms, loading, uid, navigate, incoming, user, profile }) {
 }
 
 // ── People Tab ────────────────────────────────────────────────────────────────
-function PeopleTab({ uid, myInfo, navigate, dms, outgoing }) {
+function PeopleTab({ uid, myInfo, navigate, dms, outgoing, incoming }) {
   const [queryStr,  setQueryStr]  = useState('')
   const [results,   setResults]   = useState([])
   const [searching, setSearching] = useState(false)
   const [sending,   setSending]   = useState(null)
+  const [accepting, setAccepting] = useState(null)
+  const [declining, setDeclining] = useState(null)
 
   useEffect(() => {
     if (!queryStr.trim()) { setResults([]); return }
@@ -281,21 +283,38 @@ function PeopleTab({ uid, myInfo, navigate, dms, outgoing }) {
     return () => clearTimeout(t)
   }, [queryStr, uid])
 
+  // Returns: 'connected' | 'pending-sent' | 'pending-received' | 'none'
   const getRelation = otherUid => {
-    if (dms.some(d => d.id === getDMId(uid, otherUid))) return 'connected'
-    if (outgoing.some(r => r.to === otherUid))           return 'pending'
+    if (dms.some(d => d.id === getDMId(uid, otherUid)))  return 'connected'
+    if (outgoing.some(r => r.to   === otherUid))          return 'pending-sent'
+    if (incoming.some(r => r.from === otherUid))          return 'pending-received'
     return 'none'
   }
 
-  const handleAction = async other => {
-    const rel = getRelation(other.uid)
-    if (rel === 'connected') {
-      navigate(`/chat/dm/${getDMId(uid, other.uid)}`)
-    } else if (rel === 'none') {
-      setSending(other.uid)
-      try { await sendFriendRequest(uid, myInfo, other.uid) }
-      finally { setSending(null) }
-    }
+  const getIncomingReq = otherUid => incoming.find(r => r.from === otherUid)
+
+  const handleAdd = async other => {
+    setSending(other.uid)
+    try { await sendFriendRequest(uid, myInfo, other.uid) }
+    finally { setSending(null) }
+  }
+
+  const handleAccept = async other => {
+    const req = getIncomingReq(other.uid)
+    if (!req) return
+    setAccepting(other.uid)
+    try {
+      const dmId = await acceptFriendRequest(req.id, uid, myInfo, req.from, req.fromInfo)
+      navigate(`/chat/dm/${dmId}`)
+    } finally { setAccepting(null) }
+  }
+
+  const handleDecline = async other => {
+    const req = getIncomingReq(other.uid)
+    if (!req) return
+    setDeclining(other.uid)
+    try { await declineFriendRequest(req.id) }
+    finally { setDeclining(null) }
   }
 
   return (
@@ -320,7 +339,6 @@ function PeopleTab({ uid, myInfo, navigate, dms, outgoing }) {
             const label  = u.username ? `@${u.username}` : (u.displayName || 'Unknown')
             const avatar = u.customPhotoURL || u.photoURL
             const rel    = getRelation(u.uid)
-            const busy   = sending === u.uid
 
             return (
               <li key={u.uid} className="card p-3 flex items-center gap-3">
@@ -334,22 +352,47 @@ function PeopleTab({ uid, myInfo, navigate, dms, outgoing }) {
                     <p className="text-xs text-slate-400 dark:text-zinc-600 truncate mt-0.5">{u.bio}</p>
                   )}
                 </div>
-                <button
-                  onClick={() => handleAction(u)}
-                  disabled={rel === 'pending' || busy}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0
-                    ${rel === 'pending'
-                      ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 cursor-not-allowed border border-amber-200 dark:border-amber-500/20'
-                      : 'bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50'
-                    }`}>
-                  {busy
-                    ? '…'
-                    : rel === 'connected'
-                      ? 'Message'
-                      : rel === 'pending'
-                        ? 'Pending…'
-                        : 'Add'}
-                </button>
+
+                {/* Action area — varies by relation */}
+                {rel === 'connected' && (
+                  <button onClick={() => navigate(`/chat/dm/${getDMId(uid, u.uid)}`)}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600
+                               text-white text-xs font-medium transition-colors flex-shrink-0">
+                    Message
+                  </button>
+                )}
+
+                {rel === 'pending-sent' && (
+                  <span className="px-3 py-1.5 rounded-lg text-xs font-medium flex-shrink-0
+                                   bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400
+                                   border border-amber-200 dark:border-amber-500/20">
+                    Pending…
+                  </span>
+                )}
+
+                {rel === 'pending-received' && (
+                  <div className="flex gap-1.5 flex-shrink-0">
+                    <button onClick={() => handleDecline(u)} disabled={declining === u.uid}
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700
+                                 text-xs font-medium text-slate-500 dark:text-zinc-400
+                                 hover:bg-slate-50 dark:hover:bg-zinc-800 disabled:opacity-50 transition-colors">
+                      {declining === u.uid ? '…' : 'Decline'}
+                    </button>
+                    <button onClick={() => handleAccept(u)} disabled={accepting === u.uid}
+                      className="px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600
+                                 disabled:opacity-50 text-white text-xs font-medium transition-colors">
+                      {accepting === u.uid ? '…' : 'Accept'}
+                    </button>
+                  </div>
+                )}
+
+                {rel === 'none' && (
+                  <button onClick={() => handleAdd(u)} disabled={sending === u.uid}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600
+                               disabled:opacity-50 text-white text-xs font-medium transition-colors flex-shrink-0">
+                    {sending === u.uid ? '…' : 'Add'}
+                  </button>
+                )}
               </li>
             )
           })}
@@ -494,7 +537,7 @@ function ChatHubContent() {
       {tab === 'people' && (
         <PeopleTab
           uid={user?.uid} myInfo={myInfo} navigate={navigate}
-          dms={dms} outgoing={outgoing}
+          dms={dms} outgoing={outgoing} incoming={incoming}
         />
       )}
 

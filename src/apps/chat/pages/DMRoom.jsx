@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useChatAuth } from '../context/AuthContext'
 import { useProfile } from '../hooks/useProfile'
 import { useDMMessages } from '../hooks/useDMMessages'
@@ -36,15 +36,26 @@ function DMRoomContent() {
   const { user }              = useChatAuth()
   const { profile }           = useProfile(user.uid)
   const { messages, loading } = useDMMessages(dmId)
+  const navigate              = useNavigate()
 
-  const [dm,      setDM]      = useState(null)
-  const [text,    setText]    = useState('')
-  const [sending, setSending] = useState(false)
+  const [dm,        setDM]        = useState(null)
+  const [dmChecked, setDMChecked] = useState(false)
+  const [text,      setText]      = useState('')
+  const [sending,   setSending]   = useState(false)
 
   const bottomRef = useRef(null)
   const inputRef  = useRef(null)
 
-  useEffect(() => { getDM(dmId).then(setDM) }, [dmId])
+  useEffect(() => {
+    getDM(dmId).then(result => {
+      if (!result || !result.participants?.includes(user.uid)) {
+        navigate('/chat', { replace: true })
+        return
+      }
+      setDM(result)
+      setDMChecked(true)
+    })
+  }, [dmId, user.uid, navigate])
 
   useEffect(() => {
     if (!loading && messages.length > 0) markDMsRead(dmId, user.uid, messages)
@@ -73,6 +84,12 @@ function DMRoomContent() {
       inputRef.current?.focus()
     }
   }, [text, sending, dmId, user, profile])
+
+  if (!dmChecked) return (
+    <div className="flex items-center justify-center h-screen">
+      <div className="w-5 h-5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin"/>
+    </div>
+  )
 
   return (
     <div className="flex flex-col" style={{ height: '100vh' }}>
