@@ -3,9 +3,35 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useChatAuth } from '../context/AuthContext'
 import { useProfile } from '../hooks/useProfile'
 import { useDMMessages } from '../hooks/useDMMessages'
-import { getDM, sendDMMessage, markDMsRead } from '../lib/chatService'
+import { useDMTyping } from '../hooks/useTyping'
+import { getDM, sendDMMessage, markDMsRead, setDMTyping } from '../lib/chatService'
 import { ProtectedRoute } from '../components/ProtectedRoute'
 import { ChatNavbar } from '../components/ChatNavbar'
+
+function TypingBubble({ names }) {
+  const label = names.length === 1
+    ? `${names[0]} is typing`
+    : `${names.join(', ')} are typing`
+  return (
+    <div className="flex items-end gap-2 mt-3">
+      <div className="w-8 h-8 flex-shrink-0"/>
+      <div className="flex flex-col items-start max-w-[75%] sm:max-w-[65%]">
+        <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-mono mb-1 px-1">
+          {label}
+        </span>
+        <div className="bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700
+                        rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
+          {[0, 150, 300].map(delay => (
+            <span key={delay}
+              className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-zinc-500 animate-bounce"
+              style={{ animationDelay: `${delay}ms`, animationDuration: '1s' }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function fmtTime(ts) {
   if (!ts) return ''
@@ -36,6 +62,7 @@ function DMRoomContent() {
   const { user }              = useChatAuth()
   const { profile }           = useProfile(user.uid)
   const { messages, loading } = useDMMessages(dmId)
+  const typers                = useDMTyping(dmId, user.uid)
   const navigate              = useNavigate()
 
   const [dm,        setDM]        = useState(null)
@@ -43,8 +70,9 @@ function DMRoomContent() {
   const [text,      setText]      = useState('')
   const [sending,   setSending]   = useState(false)
 
-  const bottomRef = useRef(null)
-  const inputRef  = useRef(null)
+  const bottomRef   = useRef(null)
+  const inputRef    = useRef(null)
+  const typingTimer = useRef(null)
 
   useEffect(() => {
     getDM(dmId).then(result => {
@@ -63,7 +91,15 @@ function DMRoomContent() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, typers])
+
+  // Clear typing on unmount
+  useEffect(() => {
+    return () => {
+      clearTimeout(typingTimer.current)
+      setDMTyping(dmId, user, false).catch(() => {})
+    }
+  }, [dmId, user])
 
   const otherUid   = dm?.participants?.find(p => p !== user.uid)
   const otherInfo  = dm?.participantInfo?.[otherUid] || {}
@@ -71,12 +107,29 @@ function DMRoomContent() {
     ? `@${otherInfo.username}`
     : (otherInfo.displayName || '')
 
+  const handleInput = useCallback(e => {
+    const val = e.target.value
+    setText(val)
+    if (val.trim()) {
+      setDMTyping(dmId, user, true).catch(() => {})
+      clearTimeout(typingTimer.current)
+      typingTimer.current = setTimeout(() => {
+        setDMTyping(dmId, user, false).catch(() => {})
+      }, 3000)
+    } else {
+      clearTimeout(typingTimer.current)
+      setDMTyping(dmId, user, false).catch(() => {})
+    }
+  }, [dmId, user])
+
   const handleSend = useCallback(async e => {
     e.preventDefault()
     if (!text.trim() || sending) return
     const msg = text.trim()
     setText('')
     setSending(true)
+    clearTimeout(typingTimer.current)
+    setDMTyping(dmId, user, false).catch(() => {})
     try {
       await sendDMMessage(dmId, msg, user, profile?.username || '')
     } finally {
@@ -113,7 +166,8 @@ function DMRoomContent() {
               <p className="text-sm font-mono">No messages yet — say hello!</p>
             </div>
           ) : (
-            messages.map((msg, i) => {
+            <>
+            {messages.map((msg, i) => {
               const isMe     = msg.uid === user.uid
               const prevSame = i > 0 && messages[i - 1].uid === msg.uid
               const isLast   = i === messages.length - 1 || messages[i + 1].uid !== msg.uid
@@ -162,7 +216,9 @@ function DMRoomContent() {
                   </div>
                 </div>
               )
-            })
+            })}
+            {typers.length > 0 && <TypingBubble names={typers} />}
+            </>
           )}
 
           <div ref={bottomRef} className="h-1"/>
@@ -179,7 +235,7 @@ function DMRoomContent() {
           <input
             ref={inputRef}
             value={text}
-            onChange={e => setText(e.target.value)}
+            onChange={handleInput}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) handleSend(e) }}
             placeholder="Type a message…"
             autoComplete="off"

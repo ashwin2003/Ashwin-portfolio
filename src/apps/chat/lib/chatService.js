@@ -79,6 +79,20 @@ export function subscribeTyping(roomId, callback) {
   })
 }
 
+export async function setDMTyping(dmId, user, isTyping) {
+  await updateDoc(doc(db, 'dms', dmId), {
+    [`typing.${user.uid}`]: isTyping
+      ? { displayName: user.displayName, at: serverTimestamp() }
+      : deleteField(),
+  })
+}
+
+export function subscribeDMTyping(dmId, callback) {
+  return onSnapshot(doc(db, 'dms', dmId), snap => {
+    callback(snap.data()?.typing || {})
+  })
+}
+
 // ── Read receipts ─────────────────────────────────────────────────────────────
 // Accepts already-loaded messages array (no extra getDocs needed)
 export async function markMessagesRead(roomId, userId, messages) {
